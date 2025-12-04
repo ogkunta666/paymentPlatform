@@ -1,19 +1,5 @@
 # Payment Platform - Teljes Dokumentáció
 
-## Projekt Áttekintés
-
-A Payment Platform egy Laravel alapú REST API alkalmazás, amely fizetési tranzakciók kezelésére szolgál. Az alkalmazás támogatja a felhasználói authentikációt, megrendelések nyilvántartását és a hozzájuk kapcsolódó fizetések teljes körű menedzsmentjét.
-
-### Technológiai Stack
-
-- **Backend Framework:** Laravel 11
-- **Authentikáció:** Laravel Sanctum (Bearer Token)
-- **Adatbázis:** MySQL
-- **Teszt Framework:** PHPUnit
-- **API Tesztelés:** Postman
-- **Locale:** Magyar (hu_HU)
-- **Timezone:** Europe/Budapest
-
 ---
 
 ## Adatbázis Struktúra
@@ -265,8 +251,6 @@ Body:
     "token_type": "Bearer"
 }
 ```
-
-**⚠️ FONTOS:** Az `access_token` értékét mentsd el! Ez szükséges a védett végpontokhoz.
 
 ---
 
@@ -544,21 +528,6 @@ Headers:
 
 ---
 
-## Postman Collection
-
-Az API-t Postman segítségével is tesztelheted. A projekt tartalmaz egy előre elkészített collection-t.
-
-### Importálás
-1. Nyisd meg a Postman-t
-2. Import → File
-3. Válaszd ki: `docs/PaymentPlatform.postman_collection.json`
-4. A collection importálva
-
-### Token Beállítása
-1. Login után másold ki az `access_token` értékét
-2. Collection Variables → `token` → Paste
-3. Vagy minden kérésnél manuálisan állítsd be az Authorization header-t
-
 ### Postman Feladatok Áttekintése
 
 ![Postman Feladatok](./Postman%20feladatok.png)
@@ -647,30 +616,22 @@ A projekt teljes körű PHPUnit tesztekkel rendelkezik minden API végpontra.
 
 ### Tesztek Futtatása
 
-```bash
-php artisan test
-```
+
 
 ### Teszt Eredmények
 
 ![Test Eredmények](./test.png)
 
 **Összegzés:**
-- ✅ **25 teszt futott le sikeresen**
-- ✅ **112 állítás (assertion) teljesült**
-- ⏱️ **Futási idő:** ~1.24 másodperc
-- 📊 **Lefedettség:** 100% az API végpontokra
+-  **25 teszt futott le sikeresen**
+-  **112 állítás (assertion) teljesült**
+-  **Futási idő:** ~1.24 másodperc
+-  **Lefedettség:** 100% az API végpontokra
 
 
 ---
 
-3. **.env fájl konfigurálása**
-```bash
-cp .env.example .env
-php artisan key:generate
-```
-
-4. **Adatbázis beállítások (.env)**
+3. **Adatbázis beállítások (.env)**
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
