@@ -1,59 +1,664 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Payment Platform - Teljes Dokumentáció
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+---
 
-## About Laravel
+## Adatbázis Struktúra
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Az alkalmazás adatbázisa három fő táblából áll: felhasználók (users), megrendelések (orders) és fizetések (payments). A táblák között hierarchikus kapcsolat van: egy felhasználóhoz több megrendelés tartozhat, és minden megrendeléshez több fizetés is rögzíthető. Az adatbázis MySQL-t használ, Laravel migrációkkal felépítve, foreign key megkötésekkel biztosítva az adatintegritást.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Users Tábla
+A felhasználók alapadatait tárolja.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Mező | Típus | Leírás |
+|------|-------|--------|
+| id | bigint | Elsődleges kulcs |
+| name | varchar(255) | Felhasználó neve |
+| email | varchar(255) | Email cím (egyedi) |
+| password | varchar(255) | Hash-elt jelszó |
+| email_verified_at | timestamp | Email megerősítés időpontja |
+| created_at | timestamp | Létrehozás dátuma |
+| updated_at | timestamp | Utolsó módosítás dátuma |
 
-## Learning Laravel
+### Orders Tábla
+Megrendelések tárolása felhasználókhoz kapcsolva.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+| Mező | Típus | Leírás |
+|------|-------|--------|
+| id | bigint | Elsődleges kulcs |
+| user_id | bigint | Foreign key (users.id) |
+| total_amount | decimal(10,2) | Megrendelés teljes összege |
+| status | varchar(255) | Státusz (pending, processing, completed, cancelled) |
+| created_at | timestamp | Létrehozás dátuma |
+| updated_at | timestamp | Utolsó módosítás dátuma |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+**Kapcsolat:** `belongsTo(User)`, `hasMany(Payment)`
 
-## Laravel Sponsors
+### Payments Tábla
+Fizetések tárolása megrendelésekhez kapcsolva.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+| Mező | Típus | Leírás |
+|------|-------|--------|
+| id | bigint | Elsődleges kulcs |
+| order_id | bigint | Foreign key (orders.id) |
+| payment_method | varchar(255) | Fizetési mód |
+| amount | decimal(10,2) | Fizetett összeg |
+| paid_at | timestamp | Fizetés időpontja (nullable) |
+| created_at | timestamp | Létrehozás dátuma |
 
-### Premium Partners
+**Megjegyzés:** A payments tábla nem rendelkezik `updated_at` mezővel.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+**Kapcsolat:** `belongsTo(Order)`
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Eloquent Modellek és Kapcsolatok
 
-## Code of Conduct
+### User Model
+```php
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable, HasApiTokens;
+    
+    // Kapcsolat
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+}
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Order Model
+```php
+class Order extends Model
+{
+    use HasFactory;
+    
+    // Kapcsolatok
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+    
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+}
+```
 
-## Security Vulnerabilities
+### Payment Model
+```php
+class Payment extends Model
+{
+    use HasFactory;
+    
+    const UPDATED_AT = null;
+    
+    // Kapcsolat
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+}
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## Factory-k és Seeders
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### UserFactory
+Magyar neveket és adatokat generál Faker segítségével.
+
+### OrderFactory
+Véletlenszerű megrendeléseket hoz létre:
+- Véletlenszerű összeg (10-5000 között)
+- Státusz: pending, processing, completed, cancelled
+- Időbélyeg: utolsó 6 hónap
+
+### PaymentFactory
+Véletlenszerű fizetéseket generál:
+- Fizetési módok: credit_card, paypal, bank_transfer, cash, stripe
+- Összeg: 10-5000 között
+- 80% eséllyel kitöltött `paid_at` mező
+
+### DatabaseSeeder
+Automatikus adatfeltöltés:
+- **1 db Kunta felhasználó** (email: kunta@example.com, jelszó: Super_Secret_Pw2025!)
+- **10 db fake felhasználó** magyar adatokkal
+- Minden felhasználóhoz **1-5 megrendelés**
+- Minden megrendeléshez **1-3 fizetés**
+
+---
+
+## API Végpontok
+
+### Base URL
+```
+http://localhost:8000/api
+```
+
+### Authentikáció
+Az API Laravel Sanctum alapú Bearer Token authentikációt használ.
+
+**Token használat:**
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+---
+
+## Publikus Végpontok
+
+### 1. Ping - Szerver Ellenőrzés
+
+**Endpoint:** `GET /api/ping`
+
+**Leírás:** Egyszerű végpont a szerver működésének tesztelésére.
+
+**Request:**
+```
+GET http://localhost:8000/api/ping
+Headers:
+  Accept: application/json
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "message": "pong",
+    "timestamp": "2025-12-04T12:30:45+00:00",
+    "server_time": "2025-12-04 12:30:45"
+}
+```
+
+---
+
+### 2. Regisztráció
+
+**Endpoint:** `POST /api/register`
+
+**Leírás:** Új felhasználó létrehozása. A sikeres regisztráció után külön be kell jelentkezni.
+
+**Request:**
+```json
+POST http://localhost:8000/api/register
+Headers:
+  Content-Type: application/json
+  Accept: application/json
+
+Body:
+{
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "password123",
+    "password_confirmation": "password123"
+}
+```
+
+**Validációs Szabályok:**
+- `name`: kötelező, max 255 karakter
+- `email`: kötelező, valid email, egyedi
+- `password`: kötelező, min 8 karakter, megerősítés kötelező
+
+**Response (201):**
+```json
+{
+    "message": "Registration successful",
+    "user": {
+        "name": "Test User",
+        "email": "test@example.com",
+        "updated_at": "2025-12-04T10:30:00.000000Z",
+        "created_at": "2025-12-04T10:30:00.000000Z",
+        "id": 1
+    }
+}
+```
+
+---
+
+### 3. Bejelentkezés
+
+**Endpoint:** `POST /api/login`
+
+**Leírás:** Bejelentkezés és Bearer token megszerzése.
+
+**Request:**
+```json
+POST http://localhost:8000/api/login
+Headers:
+  Content-Type: application/json
+  Accept: application/json
+
+Body:
+{
+    "email": "kunta@example.com",
+    "password": "Super_Secret_Pw2025!"
+}
+```
+
+**Response (200):**
+```json
+{
+    "message": "Login successful",
+    "user": {
+        "id": 1,
+        "name": "Kunta",
+        "email": "kunta@example.com",
+        "email_verified_at": null,
+        "created_at": "2025-12-04T10:30:00.000000Z",
+        "updated_at": "2025-12-04T10:30:00.000000Z"
+    },
+    "access_token": "1|abcdefghijklmnopqrstuvwxyz123456789",
+    "token_type": "Bearer"
+}
+```
+
+---
+
+## Védett Végpontok
+
+Az alábbi végpontok Bearer Token authentikációt igényelnek.
+
+### 4. Bejelentkezett Felhasználó Adatai
+
+**Endpoint:** `GET /api/user`
+
+**Request:**
+```
+GET http://localhost:8000/api/user
+Headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+```
+
+**Response (200):**
+```json
+{
+    "id": 1,
+    "name": "Kunta",
+    "email": "kunta@example.com",
+    "email_verified_at": null,
+    "created_at": "2025-12-04T10:30:00.000000Z",
+    "updated_at": "2025-12-04T10:30:00.000000Z"
+}
+```
+
+---
+
+### 5. Kijelentkezés
+
+**Endpoint:** `POST /api/logout`
+
+**Leírás:** A jelenlegi token érvénytelenítése.
+
+**Request:**
+```
+POST http://localhost:8000/api/logout
+Headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+```
+
+**Response (200):**
+```json
+{
+    "message": "Logout successful"
+}
+```
+
+---
+
+## Payment CRUD Műveletek
+
+### 6. Payment Létrehozása
+
+**Endpoint:** `POST /api/payments`
+
+**Leírás:** Új fizetés rögzítése egy megrendeléshez.
+
+**Request:**
+```json
+POST http://localhost:8000/api/payments
+Headers:
+  Content-Type: application/json
+  Accept: application/json
+  Authorization: Bearer {{token}}
+
+Body:
+{
+    "order_id": 1,
+    "payment_method": "credit_card",
+    "amount": 150.50,
+    "paid_at": "2025-12-04 10:45:00"
+}
+```
+
+**Validációs Szabályok:**
+- `order_id`: kötelező, létező order
+- `payment_method`: kötelező, string
+- `amount`: kötelező, pozitív szám
+- `paid_at`: opcionális, datetime
+
+**Response (201):**
+```json
+{
+    "success": true,
+    "message": "Payment created successfully",
+    "data": {
+        "id": 1,
+        "order_id": 1,
+        "payment_method": "credit_card",
+        "amount": "150.50",
+        "paid_at": "2025-12-04T10:45:00.000000Z",
+        "created_at": "2025-12-04T11:00:00.000000Z",
+        "order": {
+            "id": 1,
+            "user_id": 1,
+            "total_amount": "150.50",
+            "status": "pending"
+        }
+    }
+}
+```
+
+---
+
+### 7. Összes Payment Lekérése
+
+**Endpoint:** `GET /api/payments`
+
+**Request:**
+```
+GET http://localhost:8000/api/payments
+Headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "order_id": 1,
+            "payment_method": "credit_card",
+            "amount": "150.50",
+            "paid_at": "2025-12-04T10:45:00.000000Z",
+            "created_at": "2025-12-04T11:00:00.000000Z",
+            "order": { ... }
+        }
+    ]
+}
+```
+
+---
+
+### 8. Egy Payment Lekérése
+
+**Endpoint:** `GET /api/payments/{id}`
+
+**Request:**
+```
+GET http://localhost:8000/api/payments/1
+Headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "order_id": 1,
+        "payment_method": "credit_card",
+        "amount": "150.50",
+        "paid_at": "2025-12-04T10:45:00.000000Z",
+        "created_at": "2025-12-04T11:00:00.000000Z",
+        "order": { ... }
+    }
+}
+```
+
+**Response (404):**
+```json
+{
+    "success": false,
+    "message": "Payment not found"
+}
+```
+
+---
+
+### 9. Payment Frissítése (PUT)
+
+**Endpoint:** `PUT /api/payments/{id}`
+
+**Leírás:** Teljes frissítés - minden mezőt meg kell adni.
+
+**Request:**
+```json
+PUT http://localhost:8000/api/payments/1
+Headers:
+  Content-Type: application/json
+  Accept: application/json
+  Authorization: Bearer {{token}}
+
+Body:
+{
+    "order_id": 1,
+    "payment_method": "bank_transfer",
+    "amount": 175.00,
+    "paid_at": "2025-12-04 12:00:00"
+}
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "message": "Payment updated successfully",
+    "data": { ... }
+}
+```
+
+---
+
+### 10. Payment Frissítése (PATCH)
+
+**Endpoint:** `PATCH /api/payments/{id}`
+
+**Leírás:** Részleges frissítés - csak a megadott mezők módosulnak.
+
+**Request:**
+```json
+PATCH http://localhost:8000/api/payments/1
+Headers:
+  Content-Type: application/json
+  Accept: application/json
+  Authorization: Bearer {{token}}
+
+Body:
+{
+    "payment_method": "stripe",
+    "amount": 180.00
+}
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "message": "Payment updated successfully",
+    "data": { ... }
+}
+```
+
+---
+
+### 11. Payment Törlése
+
+**Endpoint:** `DELETE /api/payments/{id}`
+
+**Request:**
+```
+DELETE http://localhost:8000/api/payments/1
+Headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "message": "Payment deleted successfully"
+}
+```
+
+**Response (404):**
+```json
+{
+    "success": false,
+    "message": "Payment not found"
+}
+```
+
+---
+
+### Postman Feladatok Áttekintése
+
+![Postman Feladatok](./Postman%20feladatok.png)
+
+Az ábrán látható az összes elérhető API végpont a Postman collection-ben rendszerezve.
+
+---
+
+## Hibakezelés
+
+### HTTP Státuszkódok
+
+| Kód | Jelentés | Leírás |
+|-----|----------|--------|
+| 200 | OK | Sikeres kérés |
+| 201 | Created | Sikeres létrehozás |
+| 401 | Unauthorized | Hiányzó vagy érvénytelen token |
+| 404 | Not Found | A keresett erőforrás nem található |
+| 422 | Unprocessable Entity | Validációs hiba |
+
+### 401 Unauthorized
+**Oka:** Hiányzó, érvénytelen vagy lejárt Bearer token.
+
+```json
+{
+    "message": "Unauthenticated."
+}
+```
+
+**Megoldás:**
+- Jelentkezz be újra
+- Frissítsd a tokent
+- Ellenőrizd a token formátumot: `Bearer YOUR_TOKEN`
+
+### 422 Validation Error
+**Oka:** A request body nem felel meg a validációs szabályoknak.
+
+```json
+{
+    "success": false,
+    "errors": {
+        "email": ["The email has already been taken."],
+        "password": ["The password must be at least 8 characters."]
+    }
+}
+```
+
+**Megoldás:** Javítsd a megadott mezőket az `errors` objektumban jelzett hibák alapján.
+
+---
+
+## Tesztelés
+
+### Automatizált Tesztek
+
+A projekt teljes körű PHPUnit tesztekkel rendelkezik minden API végpontra.
+
+#### Teszt Struktúra
+
+**AuthTest.php** - 9 teszt
+- Ping endpoint működése
+- Regisztráció érvényes adatokkal
+- Regisztráció hibás email-lel
+- Regisztráció jelszó eltéréssel
+- Bejelentkezés érvényes hitelesítő adatokkal
+- Bejelentkezés hibás hitelesítő adatokkal
+- Authentikált felhasználó adatainak lekérése
+- Nem authentikált hozzáférés elutasítása
+- Kijelentkezés működése
+
+**PaymentTest.php** - 14 teszt
+- Payment létrehozása authentikált userrel
+- Payment létrehozás authentikáció nélkül (401)
+- Payment létrehozás hibás order_id-val (422)
+- Payment létrehozás negatív összeggel (422)
+- Összes payment lekérése
+- Payment lekérés authentikáció nélkül (401)
+- Egy payment lekérése ID alapján
+- Nem létező payment lekérése (404)
+- Payment frissítése PUT metódussal
+- Payment frissítése PATCH metódussal
+- Nem létező payment frissítése (404)
+- Payment törlése
+- Nem létező payment törlése (404)
+- Payment törlés authentikáció nélkül (401)
+
+### Tesztek Futtatása
+
+```bash
+php artisan test
+```
+
+### Teszt Eredmények
+
+![Test Eredmények](./test.png)
+
+**Összegzés:**
+- **25 teszt futott le sikeresen**
+- **112 állítás (assertion) teljesült**
+- **Futási idő:** ~1.24 másodperc
+- **Lefedettség:** 100% az API végpontokra
+
+---
+
+## Adatbázis Konfiguráció
+
+### .env Beállítások
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=paymentPlatform
+DB_USERNAME=root
+DB_PASSWORD=
+
+APP_TIMEZONE=Europe/Budapest
+APP_FAKER_LOCALE=hu_HU
+```
+
+---
+
+## Teszt Felhasználó
+
+Az adatbázis automatikusan létrehoz egy teszt felhasználót:
+
+**Email:** `kunta@example.com`  
+**Jelszó:** `Super_Secret_Pw2025!`
+
+További 10 fake felhasználó magyar adatokkal, mindegyikhez tartozó megrendelésekkel és fizetésekkel.
+
+---
