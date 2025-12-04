@@ -4,6 +4,8 @@
 
 ## Adatbázis Struktúra
 
+Az alkalmazás adatbázisa három fő táblából áll: felhasználók (users), megrendelések (orders) és fizetések (payments). A táblák között hierarchikus kapcsolat van: egy felhasználóhoz több megrendelés tartozhat, és minden megrendeléshez több fizetés is rögzíthető. Az adatbázis MySQL-t használ, Laravel migrációkkal felépítve, foreign key megkötésekkel biztosítva az adatintegritást.
+
 ### Users Tábla
 A felhasználók alapadatait tárolja.
 
