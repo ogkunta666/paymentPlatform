@@ -625,10 +625,10 @@ php artisan test
 ![Test Eredmények](./test.png)
 
 **Összegzés:**
-- ✅ **25 teszt futott le sikeresen**
-- ✅ **112 állítás (assertion) teljesült**
-- ⏱️ **Futási idő:** ~1.24 másodperc
-- 📊 **Lefedettség:** 100% az API végpontokra
+- **25 teszt futott le sikeresen**
+- **112 állítás (assertion) teljesült**
+- **Futási idő:** ~1.24 másodperc
+- **Lefedettség:** 100% az API végpontokra
 
 ---
 
