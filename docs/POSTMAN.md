@@ -43,11 +43,11 @@ Content-Type: application/json
 Accept: application/json
 ```
 
-**Body:**
+**Body (raw JSON):**
 ```json
 {
-    "email": "test@example.com",
-    "password": "password123"
+    "email": "kunta@example.com",
+    "password": "Super_Secret_Pw2025!"
 }
 ```
 
