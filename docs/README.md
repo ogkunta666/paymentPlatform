@@ -616,22 +616,26 @@ A projekt teljes körű PHPUnit tesztekkel rendelkezik minden API végpontra.
 
 ### Tesztek Futtatása
 
-
+```bash
+php artisan test
+```
 
 ### Teszt Eredmények
 
 ![Test Eredmények](./test.png)
 
 **Összegzés:**
--  **25 teszt futott le sikeresen**
--  **112 állítás (assertion) teljesült**
--  **Futási idő:** ~1.24 másodperc
--  **Lefedettség:** 100% az API végpontokra
-
+- ✅ **25 teszt futott le sikeresen**
+- ✅ **112 állítás (assertion) teljesült**
+- ⏱️ **Futási idő:** ~1.24 másodperc
+- 📊 **Lefedettség:** 100% az API végpontokra
 
 ---
 
-3. **Adatbázis beállítások (.env)**
+## Adatbázis Konfiguráció
+
+### .env Beállítások
+
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
