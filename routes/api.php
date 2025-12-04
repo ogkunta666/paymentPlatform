@@ -6,6 +6,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Public routes (no authentication required)
+Route::get('/ping', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'pong',
+        'timestamp' => now()->toIso8601String(),
+        'server_time' => now()->format('Y-m-d H:i:s'),
+    ]);
+});
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
