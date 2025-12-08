@@ -1594,42 +1594,24 @@ Duration: 1.24s
 
 ## Telepítési útmutató
 
-**1. Klónozás és telepítés:**
-```bash
-git clone <repository-url>
-cd OnlinePaymentsBearer
-composer install
-cp .env.example .env
-php artisan key:generate
-```
-
-**2. Adatbázis konfigurálása:**
+**1. Adatbázis konfigurálása:**
 - Hozz létre egy `paymentPlatform` nevű adatbázist
 - Állítsd be a `.env` fájlban az adatbázis kapcsolatot
 
-**3. Migrációk és seed:**
+**2. Migrációk és seed:**
 ```bash
 php artisan migrate
 php artisan db:seed
 ```
 
-**4. Fejlesztői szerver indítása:**
+**3. Fejlesztői szerver indítása:**
 ```bash
 php artisan serve
 ```
 
-**5. API elérése:**
+**4. API elérése:**
 - Base URL: `http://127.0.0.1:8000/api`
 - Teszt felhasználó: `kunta@example.com` / `Super_Secret_Pw2025!`
-
----
-
-## További dokumentáció
-
-- **Postman gyűjtemény:** `docs/PaymentPlatform.postman_collection.json`
-- **Postman útmutató:** `docs/POSTMAN.md`
-- **API példák:** `docs/POSTMAN_API_EXAMPLES.md`
-- **API dokumentáció:** `docs/api.md`
 
 ---
 
@@ -1643,7 +1625,3 @@ php artisan serve
 
 ---
 
-**Készítette:** Kunta  
-**Dátum:** 2025. december  
-**Framework:** Laravel 11  
-**Autentikáció:** Laravel Sanctum (Bearer Token)
