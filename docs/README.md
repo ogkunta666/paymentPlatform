@@ -19,46 +19,6 @@ Az adatbázis neve: `paymentPlatform`
 
 ---
 
-## Soft Delete Funkció
-
-A rendszer **Laravel Soft Delete** mechanizmust használ az adatok törlésekor. Ez a következőket jelenti:
-
-### Mi az a Soft Delete?
-- A törölt rekordok **fizikailag megmaradnak** az adatbázisban
-- A `deleted_at` oszlop jelzi, hogy mikor lett törölve a rekord
-- Az alapértelmezett lekérdezések **automatikusan kiszűrik** a törölt elemeket
-- A törölt rekordok **visszaállíthatók**
-
-### Alkalmazási terület
-- **Orders** (megrendelések) - soft delete támogatással
-- **Payments** (fizetések) - soft delete támogatással
-
-### Előnyök
-1. **Adatvédelem**: Véletlen törlés esetén az adatok visszanyerhetők
-2. **Audit Trail**: Nyomon követhető, hogy mikor és milyen adatok lettek törölve
-3. **Compliance**: GDPR és egyéb jogszabályi követelmények teljesítése
-4. **Üzleti logika**: Visszamenőleges elemzések és statisztikák készítése
-
-### Használat példák
-```php
-// Soft delete (alapértelmezett törlés)
-$payment->delete(); // deleted_at kitöltésre kerül
-
-// Törölt elemek lekérdezése
-Payment::onlyTrashed()->get();
-
-// Törölt elem visszaállítása
-$payment->restore();
-
-// Végleges törlés (fizikai törlés)
-$payment->forceDelete();
-
-// Minden elem lekérdezése (töröltekkel együtt)
-Payment::withTrashed()->get();
-```
-
----
-
 ## Adatbázis Struktúra
 
 Az alkalmazás adatbázisa három fő táblából áll: felhasználók (users), megrendelések (orders) és fizetések (payments). A táblák között hierarchikus kapcsolat van: egy felhasználóhoz több megrendelés tartozhat, és minden megrendeléshez több fizetés is rögzíthető. Az adatbázis MySQL-t használ, Laravel migrációkkal felépítve, foreign key megkötésekkel biztosítva az adatintegritást.
