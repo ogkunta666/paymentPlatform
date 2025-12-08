@@ -8,6 +8,7 @@ Az API olyan funkciókkal van ellátva, amelyek lehetővé teszik a fizetési tr
 - Authentikáció (regisztráció, bejelentkezés, token kezelés)
 - Felhasználók létrehozhatnak fizetéseket megrendelésekhez
 - Payment CRUD műveletek (Create, Read, Update, Delete)
+- **Soft Delete támogatás** - törölt adatok visszaállíthatók
 - A teszteléshez készült:
   - 1 Kunta felhasználó (kunta@example.com / Super_Secret_Pw2025!)
   - 10 fake felhasználó magyar nevekkel (jelszó: faker által generált)
@@ -15,6 +16,46 @@ Az API olyan funkciókkal van ellátva, amelyek lehetővé teszik a fizetési tr
   - Minden megrendeléshez 1-3 fizetés
 
 Az adatbázis neve: `paymentPlatform`
+
+---
+
+## Soft Delete Funkció
+
+A rendszer **Laravel Soft Delete** mechanizmust használ az adatok törlésekor. Ez a következőket jelenti:
+
+### Mi az a Soft Delete?
+- A törölt rekordok **fizikailag megmaradnak** az adatbázisban
+- A `deleted_at` oszlop jelzi, hogy mikor lett törölve a rekord
+- Az alapértelmezett lekérdezések **automatikusan kiszűrik** a törölt elemeket
+- A törölt rekordok **visszaállíthatók**
+
+### Alkalmazási terület
+- **Orders** (megrendelések) - soft delete támogatással
+- **Payments** (fizetések) - soft delete támogatással
+
+### Előnyök
+1. **Adatvédelem**: Véletlen törlés esetén az adatok visszanyerhetők
+2. **Audit Trail**: Nyomon követhető, hogy mikor és milyen adatok lettek törölve
+3. **Compliance**: GDPR és egyéb jogszabályi követelmények teljesítése
+4. **Üzleti logika**: Visszamenőleges elemzések és statisztikák készítése
+
+### Használat példák
+```php
+// Soft delete (alapértelmezett törlés)
+$payment->delete(); // deleted_at kitöltésre kerül
+
+// Törölt elemek lekérdezése
+Payment::onlyTrashed()->get();
+
+// Törölt elem visszaállítása
+$payment->restore();
+
+// Végleges törlés (fizikai törlés)
+$payment->forceDelete();
+
+// Minden elem lekérdezése (töröltekkel együtt)
+Payment::withTrashed()->get();
+```
 
 ---
 
@@ -36,7 +77,7 @@ A felhasználók alapadatait tárolja.
 | updated_at | timestamp | Utolsó módosítás dátuma |
 
 ### Orders Tábla
-Megrendelések tárolása felhasználókhoz kapcsolva.
+Megrendelések tárolása felhasználókhoz kapcsolva. **Soft Delete támogatással** - a törölt rekordok fizikailag megmaradnak az adatbázisban.
 
 | Mező | Típus | Leírás |
 |------|-------|--------|
@@ -46,11 +87,12 @@ Megrendelések tárolása felhasználókhoz kapcsolva.
 | status | varchar(255) | Státusz (pending, processing, completed, cancelled) |
 | created_at | timestamp | Létrehozás dátuma |
 | updated_at | timestamp | Utolsó módosítás dátuma |
+| deleted_at | timestamp | Soft delete - törlés dátuma (nullable) |
 
 **Kapcsolat:** `belongsTo(User)`, `hasMany(Payment)`
 
 ### Payments Tábla
-Fizetések tárolása megrendelésekhez kapcsolva.
+Fizetések tárolása megrendelésekhez kapcsolva. **Soft Delete támogatással** - a törölt rekordok fizikailag megmaradnak az adatbázisban.
 
 | Mező | Típus | Leírás |
 |------|-------|--------|
@@ -60,8 +102,8 @@ Fizetések tárolása megrendelésekhez kapcsolva.
 | amount | decimal(10,2) | Fizetett összeg |
 | paid_at | timestamp | Fizetés időpontja (nullable) |
 | created_at | timestamp | Létrehozás dátuma |
-
-**Megjegyzés:** A payments tábla nem rendelkezik `updated_at` mezővel.
+| updated_at | timestamp | Utolsó módosítás dátuma |
+| deleted_at | timestamp | Soft delete - törlés dátuma (nullable) |
 
 **Kapcsolat:** `belongsTo(Order)`
 
@@ -139,10 +181,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -182,15 +225,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
 {
-    use HasFactory;
-
-    /**
-     * A payments tábla nem rendelkezik updated_at mezővel.
-     */
-    const UPDATED_AT = null;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -249,7 +288,19 @@ Response: 401 Unauthorized
 - **POST** `/payments` - Új payment létrehozása
 - **GET** `/payments/{id}` - Egy payment megtekintése
 - **PUT/PATCH** `/payments/{id}` - Payment módosítása
-- **DELETE** `/payments/{id}` - Payment törlése
+- **DELETE** `/payments/{id}` - Payment törlése (Soft Delete)
+
+### Soft Delete Funkciók:
+A rendszer **Soft Delete** megközelítést használ az adatok törlésekor. Ez azt jelenti, hogy amikor egy payment vagy order törlésre kerül:
+- A rekord fizikailag **megmarad az adatbázisban**
+- A `deleted_at` mező kitöltésre kerül az aktuális időbélyeggel
+- A lekérdezések alapértelmezetten **nem tartalmazzák** a törölt rekordokat
+- A törölt rekordok később **visszaállíthatók**
+
+**Előnyök:**
+- Adatvédelem: Véletlen törlés esetén az adatok visszaállíthatók
+- Audit trail: Nyomon követhető, hogy mikor és milyen adatok lettek törölve
+- Compliance: Jogszabályi követelmények teljesítése
 
 ### Hibák:
 - **400 Bad Request**: A kérés hibás formátumú. Ezt a hibát akkor kell visszaadni, ha a kérés hibásan van formázva, vagy ha hiányoznak a szükséges mezők.
@@ -543,7 +594,9 @@ Válasz (sikeres frissítés, `200 OK`):
 
 **DELETE** `/payments/:id`
 
-Egy payment törlése.
+Egy payment soft delete törlése. A rekord fizikailag megmarad az adatbázisban, csak a `deleted_at` mező kerül kitöltésre.
+
+**Megjegyzés:** Soft Delete - a payment nem törlődik fizikailag az adatbázisból, hanem a `deleted_at` mező kitöltésre kerül.
 
 Válasz (sikeres törlés esetén): `200 OK`
 ```JSON
@@ -583,7 +636,7 @@ Válasz (ha a token érvénytelen vagy hiányzik): `401 Unauthorized`
 | POST | /payments | Hitelesített | 201 Created, 422 Unprocessable Entity, 401 Unauthorized | Új payment létrehozása |
 | GET | /payments/:id | Hitelesített | 200 OK, 404 Not Found, 401 Unauthorized | Egy payment részletei |
 | PUT/PATCH | /payments/:id | Hitelesített | 200 OK, 422 Unprocessable Entity, 404 Not Found, 401 Unauthorized | Payment frissítése |
-| DELETE | /payments/:id | Hitelesített | 200 OK, 404 Not Found, 401 Unauthorized | Payment törlése |
+| DELETE | /payments/:id | Hitelesített | 200 OK, 404 Not Found, 401 Unauthorized | Payment törlése (Soft Delete) |
 
 ---
 
@@ -757,6 +810,7 @@ erDiagram
         string status
         timestamp created_at
         timestamp updated_at
+        timestamp deleted_at "Soft Delete"
     }
     
     PAYMENTS {
@@ -766,6 +820,8 @@ erDiagram
         decimal amount
         timestamp paid_at
         timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at "Soft Delete"
     }
 ```
 
@@ -856,8 +912,8 @@ return new class extends Migration
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
             $table->string('payment_method');
             $table->decimal('amount', 10, 2);
-            $table->timestamp('paid_at');
-            $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('paid_at')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -871,7 +927,77 @@ return new class extends Migration
 };
 ```
 
-**4. Migrációk futtatása**
+**4. Soft Delete migrációk létrehozása**
+```bash
+php artisan make:migration add_soft_deletes_to_orders_table
+php artisan make:migration add_soft_deletes_to_payments_table
+```
+
+**`database/migrations/2025_12_08_081849_add_soft_deletes_to_orders_table.php`:**
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('orders', function (Blueprint $table) {
+            $table->softDeletes();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('orders', function (Blueprint $table) {
+            $table->dropSoftDeletes();
+        });
+    }
+};
+```
+
+**`database/migrations/2025_12_08_081856_add_soft_deletes_to_payments_table.php`:**
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('payments', function (Blueprint $table) {
+            $table->softDeletes();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('payments', function (Blueprint $table) {
+            $table->dropSoftDeletes();
+        });
+    }
+};
+```
+
+**5. Migrációk futtatása**
 ```bash
 php artisan migrate
 ```
