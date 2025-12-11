@@ -216,7 +216,7 @@ class PaymentTest extends TestCase
                 'message' => 'Payment updated successfully',
                 'data' => [
                     'payment_method' => 'stripe',
-                    'amount' => '100.00', // Should remain unchanged
+                    'amount' => '100.00', 
                 ],
             ]);
 
@@ -262,7 +262,8 @@ class PaymentTest extends TestCase
                 'message' => 'Payment deleted successfully',
             ]);
 
-        $this->assertDatabaseMissing('payments', [
+        
+        $this->assertSoftDeleted('payments', [
             'id' => $payment->id,
         ]);
     }

@@ -1606,7 +1606,9 @@ class PaymentTest extends TestCase
 
         $response->assertStatus(200)
                  ->assertJson(['success' => true, 'message' => 'Payment deleted successfully']);
-        $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
+        
+        // Soft delete - a rekord megmarad az adatbázisban deleted_at mezővel
+        $this->assertSoftDeleted('payments', ['id' => $payment->id]);
     }
 
     public function test_returns_404_when_deleting_nonexistent_payment(): void
@@ -1652,20 +1654,20 @@ PASS  Tests\Feature\AuthTest
 ✓ authenticated user can get user data
 
 PASS  Tests\Feature\PaymentTest
-✓ can create payment with valid data
-✓ cannot create payment without authentication
-✓ cannot create payment with invalid order id
-✓ cannot create payment with negative amount
-✓ can list all payments
-✓ cannot list payments without authentication
-✓ can show single payment
-✓ returns 404 for nonexistent payment
-✓ can update payment with put
-✓ can update payment with patch
-✓ returns 404 when updating nonexistent payment
-✓ can delete payment
-✓ returns 404 when deleting nonexistent payment
-✓ cannot delete payment without authentication
+✓ authenticated user can create payment
+✓ unauthenticated user cannot create payment
+✓ payment creation fails with invalid order id
+✓ payment creation fails with negative amount
+✓ authenticated user can get all payments
+✓ unauthenticated user cannot get payments
+✓ authenticated user can get single payment
+✓ get nonexistent payment returns 404
+✓ authenticated user can update payment with put
+✓ authenticated user can update payment with patch
+✓ update nonexistent payment returns 404
+✓ authenticated user can delete payment (Soft Delete)
+✓ delete nonexistent payment returns 404
+✓ unauthenticated user cannot delete payment
 
 PASS  Tests\Feature\ExampleTest
 ✓ the application returns a successful response
